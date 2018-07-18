@@ -8,4 +8,4 @@ tags:
  - JavaEE
 ---
 
->JDK1.8+  Maven3.5
+> JDK1.8+  Maven3.5
