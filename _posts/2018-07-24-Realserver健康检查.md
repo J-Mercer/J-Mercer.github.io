@@ -1,0 +1,60 @@
+---
+title: realserver健康检查方式
+description: keepalived对后端realserver的健康检查方式
+categories:
+- Linux
+tags:
+- 负载均衡
+- keepalived
+---
+- **TCP_CHECK**
+
+工作在第4层，keepalived向后端服务器发起一个tcp连接请求，如果后端服务器没有响应或超时，那么这个后端将从服务器池中移除。
+
+```
+TCP_CHECK {
+    connect_port 80
+    connect_timeout 6 
+    nb_get_retry 3 
+    delay_before_retry 3  
+    } 
+```
+
+- **HTTP_GET：**  
+
+工作在第5层，向指定的URL执行http请求，将得到的结果用md5加密并与指定的md5值比较看是否匹配，不匹配则从服务器池中移除；此外还可以指定http返回码来判断检测是否成功。HTTP_GET可以指定多个URL用于检测，这个一台服务器有多个虚拟主机的情况下比较好用。
+
+```
+HTTP_GET {
+    url {
+       path /index.html
+       digest 5b6d74f1453e20c09d6a20d909779ad7 
+
+    }
+    ## status_code 200 
+    connect_port 80
+    connect_timeout 3
+    nb_get_retry 3
+    delay_before_retry 7
+
+}
+```
+
+digest的值用genhash生成，genhash由keepalived自带，一般位于安装目录中的bin目录，生成方法：
+`./genhash -s 192.168.1.100 -p 80 -u /index.html`
+
+* **MISC_CHECK：**
+
+用脚本来检测，脚本如果带有参数，需将脚本和参数放入双引号内。脚本的返回值需为：
+
+    * 检测成功(如果有设置misc_dynamic，权重自动调整为退出码-2，如退出码为200，权重自动调整为198=200-2)
+
+    * 检测失败，将从服务器池中移除
+
+```
+MISC_CHECK { 
+    misc_path "/opt/mytools/check_web.sh web1" #脚本名，需全路径
+    misc_timeout 30             #脚本执行的超时时间 
+    misc_dynamic                  #动态调整服务器权重 
+}
+```
