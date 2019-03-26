@@ -2,7 +2,7 @@
 title: application.yml
 description: springboot  application.yml
 tags:
- - java
+ - Java
  - springboot
 ---
 
